@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 @dataclass
 class Pokemon:
     name: str
+    gen: Optional[int] = None
     level: Optional[int] = None
     ability: Optional[str] = None
     abilityOn: Optional[bool] = None

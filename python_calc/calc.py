@@ -1,14 +1,30 @@
 import json
 import subprocess
+from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 BRIDGE = Path(__file__).parent / 'node_bridge.cjs'
 NODE = 'node'
 
 
+Jsonable = Union[Dict[str, Any], str, int, float, bool, None, list]
+
+
+def _to_jsonable(value: Any) -> Any:
+    if is_dataclass(value):
+        return _to_jsonable(asdict(value))
+    if isinstance(value, dict):
+        return {str(k): _to_jsonable(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_to_jsonable(v) for v in value]
+    if isinstance(value, tuple):
+        return [_to_jsonable(v) for v in value]
+    return value
+
+
 def _run_node(action: str, params: Dict[str, Any]) -> Any:
-    payload = json.dumps({'action': action, 'params': params})
+    payload = json.dumps({'action': action, 'params': _to_jsonable(params)})
     proc = subprocess.run(
         [NODE, str(BRIDGE)],
         input=payload,
@@ -24,7 +40,13 @@ def _run_node(action: str, params: Dict[str, Any]) -> Any:
     return response['result']
 
 
-def calculate(gen: int, attacker: Dict[str, Any], defender: Dict[str, Any], move: Dict[str, Any], field: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def calculate(
+    gen: int,
+    attacker: Union[Dict[str, Any], Any],
+    defender: Union[Dict[str, Any], Any],
+    move: Union[Dict[str, Any], Any],
+    field: Optional[Union[Dict[str, Any], Any]] = None,
+) -> Dict[str, Any]:
     params = {
         'gen': gen,
         'attacker': attacker,

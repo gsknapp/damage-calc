@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 @dataclass
 class Move:
     name: str
+    gen: Optional[int] = None
     ability: Optional[str] = None
     item: Optional[str] = None
     useZ: Optional[bool] = None
