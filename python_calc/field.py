@@ -1,11 +1,32 @@
-from dataclasses import dataclass
-from enum import Enum
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Optional, Union
 
 
-class Side(Enum):
-    ATTACKER = 'attacker'
-    DEFENDER = 'defender'
+@dataclass
+class Side:
+    spikes: int = 0
+    steelsurge: bool = False
+    vinelash: bool = False
+    wildfire: bool = False
+    cannonade: bool = False
+    volcalith: bool = False
+    isSR: bool = False
+    isReflect: bool = False
+    isLightScreen: bool = False
+    isProtected: bool = False
+    isSeeded: bool = False
+    isSaltCured: bool = False
+    isForesight: bool = False
+    isTailwind: bool = False
+    isHelpingHand: bool = False
+    isFlowerGift: bool = False
+    isPowerTrick: bool = False
+    isFriendGuard: bool = False
+    isAuroraVeil: bool = False
+    isBattery: bool = False
+    isPowerSpot: bool = False
+    isSteelySpirit: bool = False
+    isSwitching: Optional[Union[str, None]] = None
 
 
 @dataclass
@@ -25,3 +46,14 @@ class Field:
     isVesselOfRuin: Optional[bool] = None
     attackerSide: Optional[Side] = None
     defenderSide: Optional[Side] = None
+
+    def __post_init__(self) -> None:
+        if self.attackerSide is None:
+            self.attackerSide = Side()
+        elif not isinstance(self.attackerSide, Side):
+            self.attackerSide = Side(**self.attackerSide)
+
+        if self.defenderSide is None:
+            self.defenderSide = Side()
+        elif not isinstance(self.defenderSide, Side):
+            self.defenderSide = Side(**self.defenderSide)
