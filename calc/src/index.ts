@@ -100,6 +100,7 @@ export class Pokemon extends A.Pokemon {
       ivs?: Partial<I.StatsTable> & {spc?: number};
       evs?: Partial<I.StatsTable> & {spc?: number};
       boosts?: Partial<I.StatsTable> & {spc?: number};
+      isTransformedDitto?: boolean;
     } = {}
   ) {
     super(typeof gen === 'number' ? Generations.get(gen) : gen, name, options as any);
@@ -127,7 +128,8 @@ export function calcStat(
   iv: number,
   ev: number,
   level: number,
-  nature?: string
+  nature?: string,
+  isTransformedDitto?: boolean
 ) {
   return A.Stats.calcStat(
     typeof gen === 'number' ? Generations.get(gen) : gen,
@@ -136,7 +138,8 @@ export function calcStat(
     iv,
     ev,
     level,
-    nature
+    nature,
+    isTransformedDitto
   );
 }
 

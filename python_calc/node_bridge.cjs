@@ -30,6 +30,7 @@ function normalizePokemon(data) {
     moves: data.moves,
     overrides: data.overrides,
     curHP: data.curHP,
+    isTransformedDitto: data.isTransformedDitto,
   });
 }
 
@@ -155,7 +156,7 @@ function main() {
           break;
         }
         case 'calcStat': {
-          const stat = calc.calcStat(params.gen, params.stat, params.base, params.iv, params.ev, params.level, params.nature);
+          const stat = calc.calcStat(params.gen, params.stat, params.base, params.iv, params.ev, params.level, params.nature, params.isTransformedDitto);
           response = {result: stat};
           break;
         }

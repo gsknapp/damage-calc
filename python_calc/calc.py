@@ -3,6 +3,9 @@ import subprocess
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
+import copy
+
+from pokemon import Pokemon
 
 BRIDGE = Path(__file__).parent / 'node_bridge.cjs'
 NODE = 'node'
@@ -57,7 +60,7 @@ def calculate(
     return _run_node('calculate', params)
 
 
-def calc_stat(gen: int, stat: str, base: int, iv: int, ev: int, level: int, nature: Optional[str] = None) -> int:
+def calc_stat(gen: int, stat: str, base: int, iv: int, ev: int, level: int, nature: Optional[str] = None,isTransformedDitto : Optional[bool] = False) -> int:
     params = {
         'gen': gen,
         'stat': stat,
@@ -66,5 +69,41 @@ def calc_stat(gen: int, stat: str, base: int, iv: int, ev: int, level: int, natu
         'ev': ev,
         'level': level,
         'nature': nature,
+        'isTransformedDitto':isTransformedDitto
     }
     return _run_node('calcStat', params)
+
+
+def ditto_transform(m1 : Pokemon, m2 : Pokemon) -> tuple[Pokemon,Pokemon]:
+    if m1.name == "Ditto":
+        m1_transform = copy.deepcopy(m2)
+        m1_transform.level = m1.level
+        # not sure what to do about dynamax
+        m1_transform.alliesFainted = m1.alliesFainted
+        m1_transform.item = m1.item
+        if m1.gen != None and 0 < m1.gen and m1.gen < 5:
+            m1_transform.gender = m1.gender
+        m1_transform.originalCurHP = m1.originalCurHP
+        m1_transform.status = m1.status
+        m1_transform.teraType = m1.teraType
+        m1_transform.toxicCounter = m1.toxicCounter
+        m1_transform.curHP = m1.curHP
+        m1_transform.isTransformedDitto = True
+        return m1_transform,m2
+    elif m2.name == "Ditto":
+        m2_transform = copy.deepcopy(m1)
+        m2_transform.level = m2.level
+        # not sure what to do about dynamax
+        m2_transform.alliesFainted = m2.alliesFainted
+        m2_transform.item = m2.item
+        if m2.gen != None and 0 < m2.gen and m2.gen < 5:
+            m2_transform.gender = m2.gender
+        m2_transform.originalCurHP = m2.originalCurHP
+        m2_transform.status = m2.status
+        m2_transform.teraType = m2.teraType
+        m2_transform.toxicCounter = m2.toxicCounter
+        m2_transform.curHP = m2.curHP
+        m2_transform.isTransformedDitto = True
+        return m1,m2_transform
+    else:
+        return m1,m2

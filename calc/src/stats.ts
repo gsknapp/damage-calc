@@ -122,8 +122,10 @@ export const Stats = new (class {
     iv: number,
     ev: number,
     level: number,
-    nature?: string
+    nature?: string,
+    isTransformedDitto?: boolean
   ) {
+    if (isTransformedDitto && stat === 'hp') base = 48;
     if (gen.num < 0 || gen.num > 9) throw new Error(`Invalid generation ${gen.num}`);
     if (gen.num === 0) return this.calcStatChampions(gen.natures, stat, base, ev, nature);
     if (gen.num < 3) return this.calcStatRBY(stat, base, iv, ev, level);

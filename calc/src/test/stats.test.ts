@@ -46,6 +46,10 @@ describe('Stats', () => {
     expect(Stats.calcStat(Generations.get(8), 'atk', 100, 31, 252, 100)).toBe(299);
   });
 
+  test('transformed Ditto HP uses the transformed formula', () => {
+    expect(Stats.calcStat(Generations.get(8), 'hp', 100, 31, 0, 100, 'Adamant', true)).toBe(237);
+  });
+
   test('dvs', () => {
     for (let dv = 0; dv <= 15; dv++) {
       expect(Stats.IVToDV(Stats.DVToIV(dv))).toBe(dv);

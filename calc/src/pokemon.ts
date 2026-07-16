@@ -26,6 +26,7 @@ export class Pokemon implements State.Pokemon {
   item?: I.ItemName;
   disabledItem?: I.ItemName;
   teraType?: I.TypeName;
+  isTransformedDitto?: boolean;
 
   nature: I.NatureName;
   ivs: I.StatsTable;
@@ -69,6 +70,7 @@ export class Pokemon implements State.Pokemon {
     this.boostedStat = options.boostedStat;
     this.teraType = options.teraType;
     this.item = options.item;
+    this.isTransformedDitto = options.isTransformedDitto;
     this.nature = options.nature || ('Serious' as I.NatureName);
     this.ivs = Pokemon.withDefault(gen, gen.num === 0 ? {} : options.ivs, 31);
     this.evs = Pokemon.withDefault(gen, options.evs, gen.num === 0 || gen.num >= 3 ? 0 : 252);
@@ -173,6 +175,7 @@ export class Pokemon implements State.Pokemon {
       toxicCounter: this.toxicCounter,
       moves: this.moves.slice(),
       overrides: this.species,
+      isTransformedDitto: this.isTransformedDitto,
     });
   }
 
@@ -184,7 +187,8 @@ export class Pokemon implements State.Pokemon {
       this.ivs[stat]!,
       this.evs[stat]!,
       this.level,
-      this.nature
+      this.nature,
+      this.isTransformedDitto
     );
   }
 

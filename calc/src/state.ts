@@ -22,6 +22,7 @@ export namespace State {
     toxicCounter?: number;
     moves?: I.MoveName[];
     overrides?: Partial<I.Specie>;
+    isTransformedDitto?: boolean;
   }
 
   export interface Move {

@@ -26,3 +26,4 @@ class Pokemon:
     moves: List[str] = field(default_factory=list)
     overrides: Dict[str, Any] = field(default_factory=dict)
     curHP: Optional[int] = None
+    isTransformedDitto : Optional[bool] = False
