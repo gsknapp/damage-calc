@@ -4,7 +4,8 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 import copy
-from math import ceil
+from math import ceil,floor
+import numpy as np
 
 from pokemon import Pokemon
 from field import Field
@@ -190,7 +191,8 @@ def advantage(
         field : Field = Field(),
         m1_cur_hp : int = -1,
         m2_cur_hp : int = -1,
-        num_hp_states : int = 1) -> float:
+        num_hp_states : int = 1,
+        print_matrix : bool = False) -> float:
     """Returns the damage differential in a hypothetical one-on-one matchup between m1 and m2.
 
     Assumes that each Pokemon will repeatedly select its best damaging move until a KO is achieved.  Calculates total damage dealt
@@ -209,9 +211,25 @@ def advantage(
     if m2_cur_hp == -1:
         m2_cur_hp = l2[1]
 
-    # get damage of best moves as fraction of opponent's current HP
-    m1_to_m2_damage = l1[0] / m2_cur_hp
-    m2_to_m1_damage = l2[0] / m1_cur_hp
+    # handle the case where either mon has already been KOd
+    if m1_cur_hp == 0 and m2_cur_hp == 0:
+        return 0
+    elif m1_cur_hp == 0:
+        return -1
+    elif m2_cur_hp == 0:
+        return 1
+    
+    # get raw damages
+    m1_to_m2_raw_damage = l1[0]
+    m2_to_m1_raw_damage = l2[0]
+
+    # handle the case where either pokemon is doing 0 damage to the other
+    if m1_to_m2_raw_damage == 0 and m2_to_m1_raw_damage == 0:
+        return 0
+    elif m1_to_m2_raw_damage == 0:
+        return -1
+    elif m2_to_m1_raw_damage == 0:
+        return 1
 
     # get speeds
     m1_spe = l1[2]
@@ -221,40 +239,38 @@ def advantage(
     m1_is_ditto = l1[3]
     m2_is_ditto = l2[3]
 
-    # if either mon has already been KOd
-    if m1_cur_hp == 0 and m2_cur_hp == 0:
-        return 0
-    elif m1_cur_hp == 0:
-        return -1
-    elif m2_cur_hp == 0:
-        return 1
+    advantages = np.zeros(shape=(num_hp_states,num_hp_states))
 
+    for state_1 in range(num_hp_states):
+        m1_temp_hp = floor((num_hp_states - state_1) / num_hp_states * m1_cur_hp)
+        for state_2 in range(num_hp_states):
+            m2_temp_hp = floor((num_hp_states - state_2) / num_hp_states * m2_cur_hp)
 
-    # figure out when the KO will occur
-    try:
-        m1_ttko_m2 = ceil(max(1, 1 / m1_to_m2_damage))
-        m2_ttko_m1 = ceil(max(1, 1 / m2_to_m1_damage))
-    except ZeroDivisionError:
-        if m1_to_m2_damage == 0 and m2_to_m1_damage == 0:
-            return 0
-        elif m1_to_m2_damage == 0:
-            return -1
-        else:
-            return 1
-    turn_of_ko = min(m1_ttko_m2,m2_ttko_m1)
+            # get damage of best moves as fraction of opponent's current HP
+            m1_to_m2_damage = m1_to_m2_raw_damage / m2_temp_hp
+            m2_to_m1_damage = m2_to_m1_raw_damage / m1_temp_hp
 
-    # handle the fact that Ditto only has 5 PP per move (and it is often locked into one move because it often holds Scarf);
-    # this is awkward, could be revisited
-    if m1_is_ditto and m1.item in ["Choice Scarf", "Choice Specs", "Choice Band"] and turn_of_ko > 5:
-        return min(1, 5 * m1_to_m2_damage) - min(1, turn_of_ko * m2_to_m1_damage)
-    elif m2_is_ditto and m2.item in ["Choice Scarf", "Choice Specs", "Choice Band"] and turn_of_ko > 5:
-        return min(1, turn_of_ko * m1_to_m2_damage) - min(1, 5 * m2_to_m1_damage)
-    
-    # this is now the 'normal' case (when there either is no Choice-locked Ditto or toko <= 5)
-    elif m1_spe > m2_spe and turn_of_ko == m1_ttko_m2: # if m1 is faster and KOs m2, m1 gets one more turn than m2
-        return min(1, turn_of_ko * m1_to_m2_damage) - min(1, (turn_of_ko-1) * m2_to_m1_damage)
-    elif m1_spe < m2_spe and turn_of_ko == m2_ttko_m1: # if m2 is faster and KOs m1, m2 gets one more turn than m1
-        return min(1, (turn_of_ko - 1) * m1_to_m2_damage) - min(1, turn_of_ko * m2_to_m1_damage)
-    else: # if the slower mon KOs the faster one, they take the same number of turns.  This also covers the case of a speed tie (could be revised).
-        return min(1, turn_of_ko * m1_to_m2_damage) - min(1, turn_of_ko * m2_to_m1_damage)
+            # figure out when the KO will occur
+            m1_ttko_m2 = ceil(max(1, 1 / m1_to_m2_damage)) # recall that we've already handled the case where denominator = 0
+            m2_ttko_m1 = ceil(max(1, 1 / m2_to_m1_damage))
+            turn_of_ko = min(m1_ttko_m2,m2_ttko_m1)
+
+            # handle the fact that Ditto only has 5 PP per move (and it is often locked into one move because it often holds Scarf);
+            # this is awkward, could be revisited
+            if m1_is_ditto and m1.item in ["Choice Scarf", "Choice Specs", "Choice Band"] and turn_of_ko > 5:
+                advantages[state_1,state_2] = min(1, 5 * m1_to_m2_damage) - min(1, turn_of_ko * m2_to_m1_damage)
+            elif m2_is_ditto and m2.item in ["Choice Scarf", "Choice Specs", "Choice Band"] and turn_of_ko > 5:
+                advantages[state_1,state_2] = min(1, turn_of_ko * m1_to_m2_damage) - min(1, 5 * m2_to_m1_damage)
+            
+            # this is now the 'normal' case (when there either is no Choice-locked Ditto or toko <= 5)
+            elif m1_spe > m2_spe and turn_of_ko == m1_ttko_m2: # if m1 is faster and KOs m2, m1 gets one more turn than m2
+                advantages[state_1,state_2] = min(1, turn_of_ko * m1_to_m2_damage) - min(1, (turn_of_ko-1) * m2_to_m1_damage)
+            elif m1_spe < m2_spe and turn_of_ko == m2_ttko_m1: # if m2 is faster and KOs m1, m2 gets one more turn than m1
+                advantages[state_1,state_2] = min(1, (turn_of_ko - 1) * m1_to_m2_damage) - min(1, turn_of_ko * m2_to_m1_damage)
+            else: # if the slower mon KOs the faster one, they take the same number of turns.  This also covers the case of a speed tie (could be revised).
+                advantages[state_1,state_2] = min(1, turn_of_ko * m1_to_m2_damage) - min(1, turn_of_ko * m2_to_m1_damage)
+
+    if print_matrix:
+        print(advantages)
+    return np.mean(advantages)
     
