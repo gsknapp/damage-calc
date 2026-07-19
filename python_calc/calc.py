@@ -193,13 +193,17 @@ def advantage(
         m2_cur_hp : int = -1,
         num_hp_states : int = 1,
         print_matrix : bool = False) -> float:
-    """Returns the damage differential in a hypothetical one-on-one matchup between m1 and m2.
+    """
+    Returns the average damage differential in a hypothetical one-on-one matchup between m1 and m2.
 
     Assumes that each Pokemon will repeatedly select its best damaging move until a KO is achieved.  Calculates total damage dealt
     in that one-on-one matchup as a fraction of opponent's current HP (max of 1, as overkill damage is meaningless). Returns the 
     differential in those fractions.
     
-    Currently, num_hp_states does nothing."""
+    Averages over many HP states to allow for the stat to account for 'if I can get 5% more damage on my opponent's __, then my __ sweeps'.
+    
+    Does not account for abilities which activate at low HP like Torrent (because I do not want to rerun calculate for each hp state).
+    """
 
     assert num_hp_states >= 1, "Number of HP states must be a positive integer."
 
@@ -210,6 +214,8 @@ def advantage(
         m1_cur_hp = l1[1]
     if m2_cur_hp == -1:
         m2_cur_hp = l2[1]
+
+    assert num_hp_states <= m1_cur_hp and num_hp_states <= m2_cur_hp, "Number of HP states cannot be larger than current HP"
 
     # handle the case where either mon has already been KOd
     if m1_cur_hp == 0 and m2_cur_hp == 0:
