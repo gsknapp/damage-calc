@@ -114,22 +114,31 @@ def ditto_transform(m1 : Pokemon, m2 : Pokemon) -> tuple[Pokemon,Pokemon]:
     else:
         return m1,m2
     
-def best_damaging_move(attacker:Pokemon,defender:Pokemon, gen : int = current_gen, field :Field = Field()) -> str:
+# consider setting up the calc so that the field has the relevant terrain or weather for such setters
+def best_damaging_move(attacker:Pokemon,defender:Pokemon, gen : int = current_gen, field : Field = Field()) -> tuple[str,float]:
     """Returns the name of attacker's best damaging move against defender"""
     max_damage = 0
     max_damaging_move = ""
     for move_name in attacker.moves:
         move = Move(name=move_name,gen=gen)
         damages = calculate(gen=gen,attacker=attacker,defender=defender,move=move,field=field)["damage"]
-        if isinstance(damages,list) and damages[-1] >= max_damage:
-            max_damage = damages[-1]
-            max_damaging_move=move_name
-    return max_damaging_move
+        if isinstance(damages,list): # damages could be a list of ints (single hit moves) or a list of lists of ints (multihit moves)
+            if isinstance(damages[0],int):
+                avg_move_damage = (damages[0] + damages[-1])/2
+                if avg_move_damage >= max_damage:
+                    max_damage = avg_move_damage
+                    max_damaging_move=move_name
+            if isinstance(damages[0],list):
+                avg_move_damage = sum(damages[i][0] + damages[i][-1] for i in range(len(damages)))/2
+                if avg_move_damage >= max_damage:
+                    max_damage = avg_move_damage
+                    max_damaging_move = move_name
+    return max_damaging_move,max_damage
     
 
-# consider accounting for recoil, priority, stat dropping moves (e.g. overheat), average instead of minimum damage?
+# consider accounting for recoil, priority, stat dropping moves (e.g. overheat)?
 # also consider making best_damaging_move return the relevant information so that calculate is really only ever run 8 times
-# instead of 10
+# instead of 10.  Probably should just be merged with best_damaging_move
 def one_v_one_calcs(
         m1 : Pokemon,
         m2 : Pokemon,
@@ -156,22 +165,12 @@ def one_v_one_calcs(
     m2_field.defenderSide = copy.deepcopy(field.attackerSide)
 
     # identify best moves
-    m1_best_damaging_move = best_damaging_move(gen=gen,attacker=m1,defender=m2,field=m1_field)
-    m2_best_damaging_move = best_damaging_move(gen=gen,attacker=m2,defender=m1,field=m2_field)
+    m1_best_damaging_move,m1_to_m2_damage = best_damaging_move(gen=gen,attacker=m1,defender=m2,field=m1_field)
+    m2_best_damaging_move,m2_to_m1_damage = best_damaging_move(gen=gen,attacker=m2,defender=m1,field=m2_field)
 
     # get damage and stat calcs
     m1_to_m2_calc = calculate(gen=gen,attacker=m1,defender=m2,move=Move(gen=gen,name=m1_best_damaging_move),field=m1_field)
     m2_to_m1_calc = calculate(gen=gen,attacker=m2,defender=m1,move=Move(gen=gen,name=m2_best_damaging_move),field=m2_field)
-
-    # get raw damage
-    if isinstance(m1_to_m2_calc['damage'],list):
-        m1_to_m2_damage = m1_to_m2_calc["damage"][0]
-    else:
-        m1_to_m2_damage = m1_to_m2_calc['damage']
-    if isinstance(m2_to_m1_calc['damage'],list):
-        m2_to_m1_damage = m2_to_m1_calc["damage"][0]
-    else:
-        m2_to_m1_damage = m2_to_m1_calc['damage']
 
     # get current hps
     m1_cur_hp = m1_to_m2_calc['attacker']['originalCurHP']
