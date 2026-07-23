@@ -1,3 +1,4 @@
+from .advantage import advantage
 from .calc import calculate, calc_stat
 from .field import Field, Side
 from .move import Move
@@ -6,6 +7,7 @@ from .result import Result
 from .data import ABILITIES, ITEMS, MEGA_STONES, MOVES, SPECIES, NATURES, TYPE_CHART
 
 __all__ = [
+    'advantage',
     'calculate',
     'calc_stat',
     'Pokemon',
